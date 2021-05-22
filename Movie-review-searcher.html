@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html>
+	<head>
+	<title>Moview review searcher</title>
+	<style>
+	table, th, td {
+	  border: 1px solid black;
+	}
+	</style>
+	</head>
+	<body>
+
+		<!-- Search form to get search parameters -->
+		<form name="searchForm" id="searchForm" onSubmit="search(event)">
+		
+			  <label for="title">Title:</label><br>
+			  <input type="text" id="title" name="title"><br>
+			  
+			  <p></p>
+			  
+			  <label for="openingDateFrom">Opening date from:</label>
+			  <input type="date" id="openingDateFrom" name="openingDateFrom">
+			  
+			  <p></p>
+			  
+			  <label for="openingDateTo">Opening date to:</label>
+			  <input type="date" id="openingDateTo" name="openingDateTo">
+			  
+			  <p></p>
+			  
+			  <label for="publicationDateFrom">Publication date from:</label>
+			  <input type="date" id="publicationDateFrom" name="publicationDateFrom">
+			  
+			  <p></p>
+			  
+			  <label for="publicationDateTo">Publication date to:</label>
+			  <input type="date" id="publicationDateTo" name="publicationDateTo">
+			  
+			  <p></p>
+			  
+			  <input type="submit" value="Sök">
+			  
+			  <p></p>
+		  
+		</form>
+		
+		<div>
+		
+			<!-- Table for presenting review data -->
+			<table id="reviewsTable">
+			
+				<tr>
+					<th>Title</th>
+					<th>Opening date</th>
+					<th>Critics pick</th>
+					<th>Headline</th> 
+					<th>Short summary</th>
+					<th>Byline</th>
+					<th>Publication date</th>
+					<th>Link to article</a></th>
+				</tr>
+				
+			</table>
+		
+		</div>
+		
+		<br>
+		<div><button type="button" onclick=fetchMoreResults()>More results</button></div>
+		<br>
+		
+		<script>
+		
+			var offset = 0; // 0, 20, 40, ... Indicates how many items have been loaded, but only if there are more reviews to be shown.
+			var searchSessionActive = false; // Indicates if the user has started with any search.
+			var addMoreResults = false;
+			var searchParams;
+			var xhr = new XMLHttpRequest();
+			
+			setUpXHR();
+			
+			// Prototype presententing input search parameters.
+			function SearchParams(title, openingDateFrom, openingDateTo, publicationDateFrom, publicationDateTo, offset) {
+				this.title = title;
+				this.openingDateFrom = openingDateFrom;
+				this.openingDateTo = openingDateTo;
+				this.publicationDateFrom = publicationDateFrom;
+				this.publicationDateTo = publicationDateTo;
+				this.offset = offset;
+			}
+			
+			function setUpXHR(){
+				
+				// Function for when receiving the movie reviews (the response).
+				xhr.onreadystatechange = function () {
+				if(xhr.readyState === XMLHttpRequest.DONE) {
+					var status = xhr.status;
+					if (status === 0 || (status >= 200 && status < 400)) {
+						// The request has been completed successfully
+						var responseText = xhr.responseText;
+						if (responseText != ""){ //Non-empty response.
+							var reviewsArray = JSON.parse(responseText);
+							
+							if (addMoreResults){ // Append results.
+								appendTable(reviewsArray);
+							}else { // Replace results.
+								replaceTable(reviewsArray);
+							}
+						}
+					}
+				  }
+				};
+			}
+			
+			// New search.
+			function search(e){
+				offset = 0;
+				addMoreResults = false; // Replace the tables content when performing a new search.
+				searchSessionActive = true;
+				e.preventDefault(); //Prevent default form submission.
+				
+				var formElements = document.getElementById("searchForm").elements;
+				
+				var title = formElements.namedItem("title").value;
+				var openingDateFrom = formElements.namedItem("openingDateFrom").value;
+				var openingDateTo = formElements.namedItem("openingDateTo").value;
+				var publicationDateFrom = formElements.namedItem("publicationDateFrom").value;
+				var publicationDateTo = formElements.namedItem("publicationDateTo").value;
+				
+				searchParams = new SearchParams(title, openingDateFrom, openingDateTo, publicationDateFrom, publicationDateTo, offset);
+				
+				xhr.open('POST', 'http://localhost:8001');
+				xhr.setRequestHeader('Content-Type', 'application/json; charset=UTF-8'); // Set HTTP content-type header.
+				xhr.send(JSON.stringify(searchParams));
+				
+			}
+			
+			// Search for more results.
+			function fetchMoreResults(){
+				addMoreResults = true; // We want the results returned to append the tables content, not replace it.
+				if (searchSessionActive){ //Makes sure we don't send any request before the user has performed a search.
+					offset += 20; // Get next load of results.
+					searchParams.offset = offset;
+					xhr.open('POST', 'http://localhost:8001');
+					xhr.setRequestHeader('Content-Type', 'application/json; charset=UTF-8'); // Set HTTP content-type header.
+					xhr.send(JSON.stringify(searchParams));
+				}
+			}
+			
+			// Appends the element in reviewArray to the table.
+			function appendTable(reviewsArray){
+			
+				var table = document.getElementById("reviewsTable");
+				var startRowIndex = table.rows.length;
+				
+				var review;
+				var row;
+				
+				for (i = 0; i < reviewsArray.length; i++) {
+					review = reviewsArray[i];
+					row = table.insertRow(i + startRowIndex);
+					insertRowCells(review, row);
+				}
+			
+			}
+			
+			// Delete all rows in the table, then fills it with the reviews in reviewsArray.
+			function replaceTable(reviewsArray){
+				var table = document.getElementById("reviewsTable");
+				
+				var nbrOfRows = table.rows.length - 1;
+				
+				for (j = 0; j < nbrOfRows; j++){
+					console.log(table.rows.length);
+					table.deleteRow(1);
+				}
+				
+				var review;
+				var row;
+				
+				for (i = 0; i < reviewsArray.length; i++) {
+					review = reviewsArray[i];
+					row = table.insertRow(i + 1);
+					insertRowCells(review, row);
+				}
+			}
+			
+			// Inserts rowcells in the provided row using the values in review.
+			function insertRowCells(review, row){
+			
+				row.insertCell(0).innerHTML = review.displayTitle;
+				row.insertCell(1).innerHTML = review.openingDate;
+				
+				if (review.criticsPick){
+					row.insertCell(2).innerHTML = "Yes";
+				}else if (!(review.criticsPick)){
+					row.insertCell(2).innerHTML = "No";
+				}
+				
+				row.insertCell(3).innerHTML = review.headline;
+				row.insertCell(4).innerHTML = review.shortSummary;
+				row.insertCell(5).innerHTML = review.byline;
+				row.insertCell(6).innerHTML = review.publicationDate;
+				row.insertCell(7).innerHTML = '<a href="' + review.urlLink + '">' + review.linktext + '</a>';
+			
+			}
+	  
+		</script>
+
+</body>
+</html>
