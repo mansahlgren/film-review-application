@@ -1,9 +1,10 @@
 # film-review-application
 
-Applikation för att söka efter filmrecensioner med hjälp av ett externt API tillhörande NYT. Man kan söka med hjälp av flera olika parametrar och se information om ett godtyckligt antal filmer.
+Application to search for film reviews using an external API belonging to NYT. The search can be preformed using several different parameters, and the application can show information about an arbitrary number of movies.
 
-Applikationen består av en webbsida där användaren matar in parametrar och visar sökresultaten, och en javaserver som kommunicerar med NYT och tolkar sökresultaten.
+The program consists of a website, and a java server. The website is used to input the values of the parameters, and to show the search result. The java server
+receives parameters from the website, communicates with the NYT API and parses the result.
 
-**Instruktioner för att köra**
+**Run instructions**
 
-Mavenprojekt. Kör mainmetoden i Server.java. Öppna sedan Movie-review-searcher.html (testad i Chrome) och börja söka.
+Maven project. Run the main method in Server.java. Then open Movie-review-searcher.html (tested in Chrome) and start searching.
